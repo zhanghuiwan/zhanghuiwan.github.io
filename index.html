@@ -208,8 +208,9 @@
         <i class="far fa-calendar"></i>
       </span>
       <span class="post-meta-item-text">发表于</span>
+      
 
-      <time title="创建时间：2022-04-20 17:01:07" itemprop="dateCreated datePublished" datetime="2022-04-20T17:01:07+08:00">2022-04-20</time>
+      <time title="创建时间：2022-04-20 17:01:07 / 修改时间：17:07:48" itemprop="dateCreated datePublished" datetime="2022-04-20T17:01:07+08:00">2022-04-20</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -247,15 +248,14 @@
     
     <div class="post-body" itemprop="articleBody">
           <h1 id="点击头像跳转到主页"><a href="#点击头像跳转到主页" class="headerlink" title="点击头像跳转到主页"></a>点击头像跳转到主页</h1><p>在 <code>themes/next/layout/_partials/sidebar/site-overview.njk</code> 中进行修改</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">// 改前</span><br><span class="line">&lt;div class=&quot;site-author site-overview-item animated&quot; itemprop=&quot;author&quot; itemscope itemtype=&quot;http://schema.org/Person&quot;&gt;</span><br><span class="line">  &#123;%- if theme.avatar.url %&#125;</span><br><span class="line">    &lt;img class=&quot;site-author-image&quot; itemprop=&quot;image&quot; alt=&quot;&#123;&#123; author &#125;&#125;&quot;</span><br><span class="line">      src=&quot;&#123;&#123; url_for(theme.avatar.url) &#125;&#125;&quot;&gt;</span><br><span class="line">  &#123;%- endif %&#125;</span><br><span class="line">  &lt;p class=&quot;site-author-name&quot; itemprop=&quot;name&quot;&gt;&#123;&#123; author &#125;&#125;&lt;/p&gt;</span><br><span class="line">  &lt;div class=&quot;site-description&quot; itemprop=&quot;description&quot;&gt;&#123;&#123; description &#125;&#125;&lt;/div&gt;</span><br><span class="line">&lt;/div&gt;</span><br><span class="line"></span><br><span class="line">// 改后</span><br><span class="line">&lt;div class=&quot;site-author site-overview-item animated&quot; itemprop=&quot;author&quot; itemscope itemtype=&quot;http://schema.org/Person&quot;&gt;</span><br><span class="line">  &#123;%- if theme.avatar.url %&#125;</span><br><span class="line">  &lt;a href=&quot;/&quot;&gt;</span><br><span class="line">    &lt;img class=&quot;site-author-image&quot; itemprop=&quot;image&quot; alt=&quot;&#123;&#123; author &#125;&#125;&quot;</span><br><span class="line">      src=&quot;&#123;&#123; url_for(theme.avatar.url) &#125;&#125;&quot;&gt;</span><br><span class="line">  &lt;/a&gt;</span><br><span class="line">  &#123;%- endif %&#125;</span><br><span class="line">  &lt;p class=&quot;site-author-name&quot; itemprop=&quot;name&quot;&gt;&#123;&#123; author &#125;&#125;&lt;/p&gt;</span><br><span class="line">  &lt;div class=&quot;site-description&quot; itemprop=&quot;description&quot;&gt;&#123;&#123; description &#125;&#125;&lt;/div&gt;</span><br><span class="line">&lt;/div&gt;</span><br></pre></td></tr></table></figure>
-
-
-
-<h1 id="点击readMore按钮后从头显示"><a href="#点击readMore按钮后从头显示" class="headerlink" title="点击readMore按钮后从头显示"></a>点击<code>readMore</code>按钮后从头显示</h1><h1 id="修改单行代码颜色"><a href="#修改单行代码颜色" class="headerlink" title="修改单行代码颜色"></a>修改单行代码颜色</h1><blockquote>
-<p>一个渐变色网址</p>
-<p><a target="_blank" rel="noopener" href="https://peiseka.com/jianbianse.html">https://peiseka.com/jianbianse.html</a></p>
-</blockquote>
-
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/archives/3ace379b.html#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
       
     </div>
 
