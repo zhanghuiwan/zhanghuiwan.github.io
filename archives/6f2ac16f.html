@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 6.1.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/apple-touch-icon-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.1.1/css/all.min.css" integrity="sha256-DfWjNxDkM94fVBWx1H5BMMp0Zq7luBlV8QRcSES7s+0=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"zhanghuiwan.github.io","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.11.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12},"copycode":true,"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeIn","post_body":"fadeIn","coll_header":"fadeIn","sidebar":"fadeIn"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="写在开头：  这篇教程只是帮助自己梳理一下gem5中关于对象创建的相关流程  gem5官方文档这一部分的内容应该是久未更新，实际的项目中代码与网站上写的内容略有出入。  官方链接如下：https:&#x2F;&#x2F;www.gem5.org&#x2F;documentation&#x2F;learning_gem5&#x2F;part2&#x2F;memoryobject&#x2F;">
+<meta property="og:type" content="article">
+<meta property="og:title" content="gem5学习记录（一）—SimpleMem">
+<meta property="og:url" content="https://zhanghuiwan.github.io/archives/6f2ac16f.html">
+<meta property="og:site_name" content="张会挽の博客">
+<meta property="og:description" content="写在开头：  这篇教程只是帮助自己梳理一下gem5中关于对象创建的相关流程  gem5官方文档这一部分的内容应该是久未更新，实际的项目中代码与网站上写的内容略有出入。  官方链接如下：https:&#x2F;&#x2F;www.gem5.org&#x2F;documentation&#x2F;learning_gem5&#x2F;part2&#x2F;memoryobject&#x2F;">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhanghuiwan.github.io/archives/6f2ac16f/image-20220425154216954.png">
+<meta property="og:image" content="https://zhanghuiwan.github.io/archives/6f2ac16f/image-20220425154328790.png">
+<meta property="og:image" content="https://zhanghuiwan.github.io/archives/6f2ac16f/image-20220425154503032.png">
+<meta property="og:image" content="https://zhanghuiwan.github.io/archives/6f2ac16f/image-20220425160018967.png">
+<meta property="og:image" content="https://zhanghuiwan.github.io/archives/6f2ac16f/image-20220425174714157.png">
+<meta property="article:published_time" content="2022-04-25T09:51:53.409Z">
+<meta property="article:modified_time" content="2022-04-25T10:40:58.182Z">
+<meta property="article:author" content="张会挽">
+<meta property="article:tag" content="gem5">
+<meta property="article:tag" content="学习">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhanghuiwan.github.io/archives/6f2ac16f/image-20220425154216954.png">
+
+
+<link rel="canonical" href="https://zhanghuiwan.github.io/archives/6f2ac16f.html">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://zhanghuiwan.github.io/archives/6f2ac16f.html","path":"archives/6f2ac16f.html","title":"gem5学习记录（一）—SimpleMem"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>gem5学习记录（一）—SimpleMem | 张会挽の博客</title>
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">张会挽の博客</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">不是随便写写</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">5</span></a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">2</span></a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">5</span></a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#gem5%E4%B8%AD%E7%9A%84%E7%AB%AF%E5%8F%A3%E5%92%8C%E5%8C%85"><span class="nav-number">1.</span> <span class="nav-text">gem5中的端口和包</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%88%9B%E5%BB%BASimple-memory-object"><span class="nav-number">2.</span> <span class="nav-text">创建Simple memory object</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#SimpleMemobj-py"><span class="nav-number">2.1.</span> <span class="nav-text">SimpleMemobj.py</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#simple-memobj-hh"><span class="nav-number">2.2.</span> <span class="nav-text">simple_memobj.hh</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#SimpleMemobj%E7%9A%84%E7%BB%93%E6%9E%84"><span class="nav-number">2.2.1.</span> <span class="nav-text">SimpleMemobj的结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#CPUSidePort-%E5%92%8C-MemSidePort-%E7%B1%BB%E7%9A%84%E5%88%9B%E5%BB%BA"><span class="nav-number">2.2.2.</span> <span class="nav-text">CPUSidePort 和 MemSidePort 类的创建</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#simple-memobj-cc"><span class="nav-number">2.3.</span> <span class="nav-text">simple_memobj.cc</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SConscript"><span class="nav-number">2.4.</span> <span class="nav-text">SConscript</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6"><span class="nav-number">3.</span> <span class="nav-text">创建配置文件</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BC%96%E8%AF%91%E8%BF%90%E8%A1%8C"><span class="nav-number">4.</span> <span class="nav-text">编译运行</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <a href="/">
+    <img class="site-author-image" itemprop="image" alt="张会挽"
+      src="/images/avatar.gif">
+  </a>
+  <p class="site-author-name" itemprop="name">张会挽</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">5</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">2</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+
+
+
+        </div>
+      </div>
+        <div class="back-to-top animated" role="button" aria-label="返回顶部">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://zhanghuiwan.github.io/archives/6f2ac16f.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="张会挽">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="张会挽の博客">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="gem5学习记录（一）—SimpleMem | 张会挽の博客">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          gem5学习记录（一）—SimpleMem
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+      
+
+      <time title="创建时间：2022-04-25 17:51:53 / 修改时间：18:40:58" itemprop="dateCreated datePublished" datetime="2022-04-25T17:51:53+08:00">2022-04-25</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/gem5/" itemprop="url" rel="index"><span itemprop="name">gem5</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>12k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>11 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <blockquote>
+<p><strong>写在开头：</strong></p>
+<ul>
+<li><p>这篇教程只是帮助自己梳理一下gem5中关于对象创建的相关流程</p>
+</li>
+<li><p>gem5官方文档这一部分的内容应该是久未更新，实际的项目中代码与网站上写的内容略有出入。</p>
+</li>
+<li><p>官方链接如下：<a target="_blank" rel="noopener" href="https://www.gem5.org/documentation/learning_gem5/part2/memoryobject/">https://www.gem5.org/documentation/learning_gem5/part2/memoryobject/</a></p>
+</li>
+</ul>
+</blockquote>
+<span id="more"></span>
+
+<h1 id="gem5中的端口和包"><a href="#gem5中的端口和包" class="headerlink" title="gem5中的端口和包"></a>gem5中的端口和包</h1><p>gem5中的对象是通过端口进行连接，主从端口之间通过发送包来进行数据交互。</p>
+<p>当从端口忙</p>
+<p><img src="/archives/6f2ac16f/image-20220425154216954.png" alt="image-20220425154216954"></p>
+<p>当主端口忙</p>
+<p><img src="/archives/6f2ac16f/image-20220425154328790.png" alt="image-20220425154328790"></p>
+<h1 id="创建Simple-memory-object"><a href="#创建Simple-memory-object" class="headerlink" title="创建Simple memory object"></a>创建Simple memory object</h1><p>此次例子创建的是下图中simple memory object部分，一方面它作为从端口接收从cpu发送来的命令，另一方面，又作为主端口将命令发往membus。</p>
+<p><img src="/archives/6f2ac16f/image-20220425154503032.png" alt="image-20220425154503032"></p>
+<p>在gem5中创建一个对象需要五个部分</p>
+<p>在<code>src/learning_gem5/part</code>下有如下四个文件</p>
+<figure class="highlight stylus"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">SimpleMemobj<span class="selector-class">.py</span></span><br><span class="line"></span><br><span class="line">simple_memobj<span class="selector-class">.hh</span></span><br><span class="line"></span><br><span class="line">simple_memobj<span class="selector-class">.cc</span></span><br><span class="line"></span><br><span class="line">SConscript</span><br></pre></td></tr></table></figure>
+
+<p>以及<code>configs/learning_gem5/part</code> 中的配置文件 <code>simple_memobj.py</code></p>
+<h2 id="SimpleMemobj-py"><a href="#SimpleMemobj-py" class="headerlink" title="SimpleMemobj.py"></a>SimpleMemobj.py</h2><p>在该文件中创建了3个端口，其中<code>inst_port</code> , <code>data_port</code>为从端口，<code>mem_side</code>为主端口</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> m5.params <span class="keyword">import</span> *</span><br><span class="line"><span class="keyword">from</span> m5.SimObject <span class="keyword">import</span> SimObject</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">SimpleMemobj</span>(<span class="title class_ inherited__">SimObject</span>):</span><br><span class="line">    <span class="built_in">type</span> = <span class="string">&#x27;SimpleMemobj&#x27;</span></span><br><span class="line">    cxx_header = <span class="string">&quot;learning_gem5/part2/simple_memobj.hh&quot;</span></span><br><span class="line"></span><br><span class="line">    inst_port = ResponsePort(<span class="string">&quot;CPU side port, receives requests&quot;</span>)</span><br><span class="line">    data_port = ResponsePort(<span class="string">&quot;CPU side port, receives requests&quot;</span>)</span><br><span class="line">    mem_side = RequestPort(<span class="string">&quot;Memory side port, sends requests&quot;</span>)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="simple-memobj-hh"><a href="#simple-memobj-hh" class="headerlink" title="simple_memobj.hh"></a>simple_memobj.hh</h2><p><strong>对于具体对象的创建，下面这张图片将会十分有帮助</strong></p>
+<p><img src="/archives/6f2ac16f/image-20220425160018967.png" alt="image-20220425160018967"></p>
+<h3 id="SimpleMemobj的结构"><a href="#SimpleMemobj的结构" class="headerlink" title="SimpleMemobj的结构"></a>SimpleMemobj的结构</h3><p>创建 <code>SimpleMemobj</code> 类：</p>
+<ol>
+<li>包括构造函数，重写 <code>getPort</code> 函数</li>
+<li>此外需要的其他功能函数，也如上图所示依次创建</li>
+<li>创建 <code>instPort</code>  <code>dataPort</code>  <code> memPort</code>  对象</li>
+</ol>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">SimpleMemobj</span> : <span class="keyword">public</span> SimObject</span><br><span class="line">&#123;</span><br><span class="line">  <span class="keyword">private</span>:</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">class</span> <span class="title class_">CPUSidePort</span> : <span class="keyword">public</span> ResponsePort</span><br><span class="line">    &#123;</span><br><span class="line">     </span><br><span class="line">    &#125;;</span><br><span class="line"></span><br><span class="line">    </span><br><span class="line">    <span class="keyword">class</span> <span class="title class_">MemSidePort</span> : <span class="keyword">public</span> RequestPort</span><br><span class="line">    &#123;</span><br><span class="line">      </span><br><span class="line">    &#125;;</span><br><span class="line"></span><br><span class="line">    <span class="function">AddrRangeList <span class="title">getAddrRanges</span><span class="params">()</span> <span class="type">const</span></span>;</span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">sendRangeChange</span><span class="params">()</span></span>;</span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">handleFunctional</span><span class="params">(PacketPtr pkt)</span></span>;</span><br><span class="line">    <span class="function"><span class="type">bool</span> <span class="title">handleRequest</span><span class="params">(PacketPtr pkt)</span></span>;</span><br><span class="line">    <span class="function"><span class="type">bool</span> <span class="title">handleResponse</span><span class="params">(PacketPtr pkt)</span></span>;</span><br><span class="line"></span><br><span class="line">    </span><br><span class="line">    CPUSidePort instPort;</span><br><span class="line">    CPUSidePort dataPort;</span><br><span class="line">    MemSidePort memPort;</span><br><span class="line">    <span class="type">bool</span> blocked;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">SimpleMemobj</span>(<span class="type">const</span> SimpleMemobjParams &amp;params);</span><br><span class="line"></span><br><span class="line">    <span class="function">Port &amp;<span class="title">getPort</span><span class="params">(<span class="type">const</span> std::string &amp;if_name,</span></span></span><br><span class="line"><span class="params"><span class="function">                  PortID idx=InvalidPortID)</span> <span class="keyword">override</span></span>;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h3 id="CPUSidePort-和-MemSidePort-类的创建"><a href="#CPUSidePort-和-MemSidePort-类的创建" class="headerlink" title="CPUSidePort 和 MemSidePort 类的创建"></a>CPUSidePort 和 MemSidePort 类的创建</h3><p>CPUSidePort：增加了阻塞时的相关函数和变量</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">CPUSidePort</span> : <span class="keyword">public</span> ResponsePort</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="keyword">private</span>:    </span><br><span class="line">        SimpleMemobj *owner;</span><br><span class="line">        <span class="type">bool</span> needRetry;</span><br><span class="line">        PacketPtr blockedPacket;</span><br><span class="line"></span><br><span class="line">      <span class="keyword">public</span>:</span><br><span class="line">        <span class="built_in">CPUSidePort</span>(<span class="type">const</span> std::string&amp; name, SimpleMemobj *owner) :</span><br><span class="line">            <span class="built_in">ResponsePort</span>(name, owner), <span class="built_in">owner</span>(owner), <span class="built_in">needRetry</span>(<span class="literal">false</span>),</span><br><span class="line">            <span class="built_in">blockedPacket</span>(<span class="literal">nullptr</span>)</span><br><span class="line">        &#123; &#125;</span><br><span class="line">		</span><br><span class="line">    	<span class="function">AddrRangeList <span class="title">getAddrRanges</span><span class="params">()</span> <span class="type">const</span> <span class="keyword">override</span></span>;</span><br><span class="line">    	<span class="function"><span class="type">void</span> <span class="title">sendPacket</span><span class="params">(PacketPtr pkt)</span></span>;</span><br><span class="line">    </span><br><span class="line">        <span class="function"><span class="type">void</span> <span class="title">trySendRetry</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">      <span class="keyword">protected</span>:</span><br><span class="line">        </span><br><span class="line">        <span class="function">Tick <span class="title">recvAtomic</span><span class="params">(PacketPtr pkt)</span> <span class="keyword">override</span></span></span><br><span class="line"><span class="function">        </span>&#123; <span class="built_in">panic</span>(<span class="string">&quot;recvAtomic unimpl.&quot;</span>); &#125;</span><br><span class="line">        </span><br><span class="line">        <span class="function"><span class="type">void</span> <span class="title">recvFunctional</span><span class="params">(PacketPtr pkt)</span> <span class="keyword">override</span></span>;</span><br><span class="line">        <span class="function"><span class="type">bool</span> <span class="title">recvTimingReq</span><span class="params">(PacketPtr pkt)</span> <span class="keyword">override</span></span>;</span><br><span class="line">        <span class="function"><span class="type">void</span> <span class="title">recvRespRetry</span><span class="params">()</span> <span class="keyword">override</span></span>;</span><br><span class="line">    &#125;;</span><br></pre></td></tr></table></figure>
+
+<p>MemSidePort</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">MemSidePort</span> : <span class="keyword">public</span> RequestPort</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="keyword">private</span>:</span><br><span class="line">        </span><br><span class="line">        SimpleMemobj *owner;</span><br><span class="line">        PacketPtr blockedPacket;</span><br><span class="line"></span><br><span class="line">      <span class="keyword">public</span>:</span><br><span class="line">        </span><br><span class="line">        <span class="built_in">MemSidePort</span>(<span class="type">const</span> std::string&amp; name, SimpleMemobj *owner) :</span><br><span class="line">            <span class="built_in">RequestPort</span>(name, owner), <span class="built_in">owner</span>(owner), <span class="built_in">blockedPacket</span>(<span class="literal">nullptr</span>)</span><br><span class="line">        &#123; &#125;</span><br><span class="line"></span><br><span class="line">        </span><br><span class="line">        <span class="function"><span class="type">void</span> <span class="title">sendPacket</span><span class="params">(PacketPtr pkt)</span></span>;</span><br><span class="line"></span><br><span class="line">      <span class="keyword">protected</span>:</span><br><span class="line">        </span><br><span class="line">    	<span class="function"><span class="type">void</span> <span class="title">recvRangeChange</span><span class="params">()</span> <span class="keyword">override</span></span>;</span><br><span class="line">    	<span class="function"><span class="type">void</span> <span class="title">recvReqRetry</span><span class="params">()</span> <span class="keyword">override</span></span>;</span><br><span class="line">        <span class="function"><span class="type">bool</span> <span class="title">recvTimingResp</span><span class="params">(PacketPtr pkt)</span> <span class="keyword">override</span></span>;</span><br><span class="line">        </span><br><span class="line">    &#125;;</span><br></pre></td></tr></table></figure>
+
+
+
+
+
+<p>完整代码入下</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">ifndef</span> __LEARNING_GEM5_PART2_SIMPLE_MEMOBJ_HH__</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __LEARNING_GEM5_PART2_SIMPLE_MEMOBJ_HH__</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;mem/port.hh&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;params/SimpleMemobj.hh&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;sim/sim_object.hh&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">SimpleMemobj</span> : <span class="keyword">public</span> SimObject</span><br><span class="line">&#123;</span><br><span class="line">  <span class="keyword">private</span>:</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">class</span> <span class="title class_">CPUSidePort</span> : <span class="keyword">public</span> ResponsePort</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="keyword">private</span>:    </span><br><span class="line">        SimpleMemobj *owner;</span><br><span class="line">        <span class="type">bool</span> needRetry;</span><br><span class="line">        PacketPtr blockedPacket;</span><br><span class="line"></span><br><span class="line">      <span class="keyword">public</span>:</span><br><span class="line">        <span class="built_in">CPUSidePort</span>(<span class="type">const</span> std::string&amp; name, SimpleMemobj *owner) :</span><br><span class="line">            <span class="built_in">ResponsePort</span>(name, owner), <span class="built_in">owner</span>(owner), <span class="built_in">needRetry</span>(<span class="literal">false</span>),</span><br><span class="line">            <span class="built_in">blockedPacket</span>(<span class="literal">nullptr</span>)</span><br><span class="line">        &#123; &#125;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="type">void</span> <span class="title">sendPacket</span><span class="params">(PacketPtr pkt)</span></span>;</span><br><span class="line">        <span class="function">AddrRangeList <span class="title">getAddrRanges</span><span class="params">()</span> <span class="type">const</span> <span class="keyword">override</span></span>;</span><br><span class="line">        <span class="function"><span class="type">void</span> <span class="title">trySendRetry</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">      <span class="keyword">protected</span>:</span><br><span class="line">        </span><br><span class="line">        <span class="function">Tick <span class="title">recvAtomic</span><span class="params">(PacketPtr pkt)</span> <span class="keyword">override</span></span></span><br><span class="line"><span class="function">        </span>&#123; <span class="built_in">panic</span>(<span class="string">&quot;recvAtomic unimpl.&quot;</span>); &#125;</span><br><span class="line">        </span><br><span class="line">        <span class="function"><span class="type">void</span> <span class="title">recvFunctional</span><span class="params">(PacketPtr pkt)</span> <span class="keyword">override</span></span>;</span><br><span class="line">        <span class="function"><span class="type">bool</span> <span class="title">recvTimingReq</span><span class="params">(PacketPtr pkt)</span> <span class="keyword">override</span></span>;</span><br><span class="line">        <span class="function"><span class="type">void</span> <span class="title">recvRespRetry</span><span class="params">()</span> <span class="keyword">override</span></span>;</span><br><span class="line">    &#125;;</span><br><span class="line"></span><br><span class="line">    </span><br><span class="line">    <span class="keyword">class</span> <span class="title class_">MemSidePort</span> : <span class="keyword">public</span> RequestPort</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="keyword">private</span>:</span><br><span class="line">        </span><br><span class="line">        SimpleMemobj *owner;</span><br><span class="line">        PacketPtr blockedPacket;</span><br><span class="line"></span><br><span class="line">      <span class="keyword">public</span>:</span><br><span class="line">        </span><br><span class="line">        <span class="built_in">MemSidePort</span>(<span class="type">const</span> std::string&amp; name, SimpleMemobj *owner) :</span><br><span class="line">            <span class="built_in">RequestPort</span>(name, owner), <span class="built_in">owner</span>(owner), <span class="built_in">blockedPacket</span>(<span class="literal">nullptr</span>)</span><br><span class="line">        &#123; &#125;</span><br><span class="line"></span><br><span class="line">        </span><br><span class="line">        <span class="function"><span class="type">void</span> <span class="title">sendPacket</span><span class="params">(PacketPtr pkt)</span></span>;</span><br><span class="line"></span><br><span class="line">      <span class="keyword">protected</span>:</span><br><span class="line">        </span><br><span class="line">        <span class="function"><span class="type">bool</span> <span class="title">recvTimingResp</span><span class="params">(PacketPtr pkt)</span> <span class="keyword">override</span></span>;</span><br><span class="line">        <span class="function"><span class="type">void</span> <span class="title">recvReqRetry</span><span class="params">()</span> <span class="keyword">override</span></span>;</span><br><span class="line">        <span class="function"><span class="type">void</span> <span class="title">recvRangeChange</span><span class="params">()</span> <span class="keyword">override</span></span>;</span><br><span class="line">    &#125;;</span><br><span class="line"></span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="type">bool</span> <span class="title">handleRequest</span><span class="params">(PacketPtr pkt)</span></span>;</span><br><span class="line">    <span class="function"><span class="type">bool</span> <span class="title">handleResponse</span><span class="params">(PacketPtr pkt)</span></span>;</span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">handleFunctional</span><span class="params">(PacketPtr pkt)</span></span>;</span><br><span class="line">    <span class="function">AddrRangeList <span class="title">getAddrRanges</span><span class="params">()</span> <span class="type">const</span></span>;</span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">sendRangeChange</span><span class="params">()</span></span>;</span><br><span class="line">    CPUSidePort instPort;</span><br><span class="line">    CPUSidePort dataPort;</span><br><span class="line">    MemSidePort memPort;</span><br><span class="line">    <span class="type">bool</span> blocked;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">SimpleMemobj</span>(<span class="type">const</span> SimpleMemobjParams &amp;params);</span><br><span class="line"></span><br><span class="line">    <span class="function">Port &amp;<span class="title">getPort</span><span class="params">(<span class="type">const</span> std::string &amp;if_name,</span></span></span><br><span class="line"><span class="params"><span class="function">                  PortID idx=InvalidPortID)</span> <span class="keyword">override</span></span>;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span> </span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="simple-memobj-cc"><a href="#simple-memobj-cc" class="headerlink" title="simple_memobj.cc"></a>simple_memobj.cc</h2><p>完整代码如下</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;learning_gem5/part2/simple_memobj.hh&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;base/trace.hh&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;debug/SimpleMemobj.hh&quot;</span></span></span><br><span class="line"></span><br><span class="line">SimpleMemobj::<span class="built_in">SimpleMemobj</span>(<span class="type">const</span> SimpleMemobjParams &amp;params) :</span><br><span class="line">    <span class="built_in">SimObject</span>(params),</span><br><span class="line">    <span class="built_in">instPort</span>(params.name + <span class="string">&quot;.inst_port&quot;</span>, <span class="keyword">this</span>),</span><br><span class="line">    <span class="built_in">dataPort</span>(params.name + <span class="string">&quot;.data_port&quot;</span>, <span class="keyword">this</span>),</span><br><span class="line">    <span class="built_in">memPort</span>(params.name + <span class="string">&quot;.mem_side&quot;</span>, <span class="keyword">this</span>),</span><br><span class="line">    <span class="built_in">blocked</span>(<span class="literal">false</span>)</span><br><span class="line">&#123;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function">Port &amp;</span></span><br><span class="line"><span class="function"><span class="title">SimpleMemobj::getPort</span><span class="params">(<span class="type">const</span> std::string &amp;if_name, PortID idx)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="built_in">panic_if</span>(idx != InvalidPortID, <span class="string">&quot;This object doesn&#x27;t support vector ports&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// This is the name from the Python SimObject declaration (SimpleMemobj.py)</span></span><br><span class="line">    <span class="keyword">if</span> (if_name == <span class="string">&quot;mem_side&quot;</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> memPort;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (if_name == <span class="string">&quot;inst_port&quot;</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> instPort;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (if_name == <span class="string">&quot;data_port&quot;</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> dataPort;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// pass it along to our super class</span></span><br><span class="line">        <span class="keyword">return</span> SimObject::<span class="built_in">getPort</span>(if_name, idx);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span></span><br><span class="line">SimpleMemobj::CPUSidePort::<span class="built_in">sendPacket</span>(PacketPtr pkt)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="comment">// Note: This flow control is very simple since the memobj is blocking.</span></span><br><span class="line"></span><br><span class="line">    <span class="built_in">panic_if</span>(blockedPacket != <span class="literal">nullptr</span>, <span class="string">&quot;Should never try to send if blocked!&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// If we can&#x27;t send the packet across the port, store it for later.</span></span><br><span class="line">    <span class="keyword">if</span> (!<span class="built_in">sendTimingResp</span>(pkt)) &#123;</span><br><span class="line">        blockedPacket = pkt;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">AddrRangeList</span><br><span class="line">SimpleMemobj::CPUSidePort::<span class="built_in">getAddrRanges</span>() <span class="type">const</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">return</span> owner-&gt;<span class="built_in">getAddrRanges</span>();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span></span><br><span class="line">SimpleMemobj::CPUSidePort::<span class="built_in">trySendRetry</span>()</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">if</span> (needRetry &amp;&amp; blockedPacket == <span class="literal">nullptr</span>) &#123;</span><br><span class="line">        <span class="comment">// Only send a retry if the port is now completely free</span></span><br><span class="line">        needRetry = <span class="literal">false</span>;</span><br><span class="line">        <span class="built_in">DPRINTF</span>(SimpleMemobj, <span class="string">&quot;Sending retry req for %d\n&quot;</span>, id);</span><br><span class="line">        <span class="built_in">sendRetryReq</span>();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span></span><br><span class="line">SimpleMemobj::CPUSidePort::<span class="built_in">recvFunctional</span>(PacketPtr pkt)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="comment">// Just forward to the memobj.</span></span><br><span class="line">    <span class="keyword">return</span> owner-&gt;<span class="built_in">handleFunctional</span>(pkt);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">bool</span></span><br><span class="line">SimpleMemobj::CPUSidePort::<span class="built_in">recvTimingReq</span>(PacketPtr pkt)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="comment">// Just forward to the memobj.</span></span><br><span class="line">    <span class="keyword">if</span> (!owner-&gt;<span class="built_in">handleRequest</span>(pkt)) &#123;</span><br><span class="line">        needRetry = <span class="literal">true</span>;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span></span><br><span class="line">SimpleMemobj::CPUSidePort::<span class="built_in">recvRespRetry</span>()</span><br><span class="line">&#123;</span><br><span class="line">    <span class="comment">// We should have a blocked packet if this function is called.</span></span><br><span class="line">    <span class="built_in">assert</span>(blockedPacket != <span class="literal">nullptr</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Grab the blocked packet.</span></span><br><span class="line">    PacketPtr pkt = blockedPacket;</span><br><span class="line">    blockedPacket = <span class="literal">nullptr</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Try to resend it. It&#x27;s possible that it fails again.</span></span><br><span class="line">    <span class="built_in">sendPacket</span>(pkt);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span></span><br><span class="line">SimpleMemobj::MemSidePort::<span class="built_in">sendPacket</span>(PacketPtr pkt)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="comment">// Note: This flow control is very simple since the memobj is blocking.</span></span><br><span class="line"></span><br><span class="line">    <span class="built_in">panic_if</span>(blockedPacket != <span class="literal">nullptr</span>, <span class="string">&quot;Should never try to send if blocked!&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// If we can&#x27;t send the packet across the port, store it for later.</span></span><br><span class="line">    <span class="keyword">if</span> (!<span class="built_in">sendTimingReq</span>(pkt)) &#123;</span><br><span class="line">        blockedPacket = pkt;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">bool</span></span><br><span class="line">SimpleMemobj::MemSidePort::<span class="built_in">recvTimingResp</span>(PacketPtr pkt)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="comment">// Just forward to the memobj.</span></span><br><span class="line">    <span class="keyword">return</span> owner-&gt;<span class="built_in">handleResponse</span>(pkt);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span></span><br><span class="line">SimpleMemobj::MemSidePort::<span class="built_in">recvReqRetry</span>()</span><br><span class="line">&#123;</span><br><span class="line">    <span class="comment">// We should have a blocked packet if this function is called.</span></span><br><span class="line">    <span class="built_in">assert</span>(blockedPacket != <span class="literal">nullptr</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Grab the blocked packet.</span></span><br><span class="line">    PacketPtr pkt = blockedPacket;</span><br><span class="line">    blockedPacket = <span class="literal">nullptr</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Try to resend it. It&#x27;s possible that it fails again.</span></span><br><span class="line">    <span class="built_in">sendPacket</span>(pkt);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span></span><br><span class="line">SimpleMemobj::MemSidePort::<span class="built_in">recvRangeChange</span>()</span><br><span class="line">&#123;</span><br><span class="line">    owner-&gt;<span class="built_in">sendRangeChange</span>();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">bool</span></span></span><br><span class="line"><span class="function"><span class="title">SimpleMemobj::handleRequest</span><span class="params">(PacketPtr pkt)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (blocked) &#123;</span><br><span class="line">        <span class="comment">// There is currently an outstanding request. Stall.</span></span><br><span class="line">        <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">DPRINTF</span>(SimpleMemobj, <span class="string">&quot;Got request for addr %#x\n&quot;</span>, pkt-&gt;<span class="built_in">getAddr</span>());</span><br><span class="line"></span><br><span class="line">    <span class="comment">// This memobj is now blocked waiting for the response to this packet.</span></span><br><span class="line">    blocked = <span class="literal">true</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Simply forward to the memory port</span></span><br><span class="line">    memPort.<span class="built_in">sendPacket</span>(pkt);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">bool</span></span></span><br><span class="line"><span class="function"><span class="title">SimpleMemobj::handleResponse</span><span class="params">(PacketPtr pkt)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="built_in">assert</span>(blocked);</span><br><span class="line">    <span class="built_in">DPRINTF</span>(SimpleMemobj, <span class="string">&quot;Got response for addr %#x\n&quot;</span>, pkt-&gt;<span class="built_in">getAddr</span>());</span><br><span class="line"></span><br><span class="line">    <span class="comment">// The packet is now done. We&#x27;re about to put it in the port, no need for</span></span><br><span class="line">    <span class="comment">// this object to continue to stall.</span></span><br><span class="line">    <span class="comment">// We need to free the resource before sending the packet in case the CPU</span></span><br><span class="line">    <span class="comment">// tries to send another request immediately (e.g., in the same callchain).</span></span><br><span class="line">    blocked = <span class="literal">false</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Simply forward to the memory port</span></span><br><span class="line">    <span class="keyword">if</span> (pkt-&gt;req-&gt;<span class="built_in">isInstFetch</span>()) &#123;</span><br><span class="line">        instPort.<span class="built_in">sendPacket</span>(pkt);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        dataPort.<span class="built_in">sendPacket</span>(pkt);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// For each of the cpu ports, if it needs to send a retry, it should do it</span></span><br><span class="line">    <span class="comment">// now since this memory object may be unblocked now.</span></span><br><span class="line">    instPort.<span class="built_in">trySendRetry</span>();</span><br><span class="line">    dataPort.<span class="built_in">trySendRetry</span>();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span></span></span><br><span class="line"><span class="function"><span class="title">SimpleMemobj::handleFunctional</span><span class="params">(PacketPtr pkt)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">// Just pass this on to the memory side to handle for now.</span></span><br><span class="line">    memPort.<span class="built_in">sendFunctional</span>(pkt);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function">AddrRangeList</span></span><br><span class="line"><span class="function"><span class="title">SimpleMemobj::getAddrRanges</span><span class="params">()</span> <span class="type">const</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="built_in">DPRINTF</span>(SimpleMemobj, <span class="string">&quot;Sending new ranges\n&quot;</span>);</span><br><span class="line">    <span class="comment">// Just use the same ranges as whatever is on the memory side.</span></span><br><span class="line">    <span class="keyword">return</span> memPort.<span class="built_in">getAddrRanges</span>();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span></span></span><br><span class="line"><span class="function"><span class="title">SimpleMemobj::sendRangeChange</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    instPort.<span class="built_in">sendRangeChange</span>();</span><br><span class="line">    dataPort.<span class="built_in">sendRangeChange</span>();</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="SConscript"><a href="#SConscript" class="headerlink" title="SConscript"></a>SConscript</h2><figure class="highlight stylus"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="title">Import</span><span class="params">(<span class="string">&#x27;*&#x27;</span>)</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">SimObject</span><span class="params">(<span class="string">&#x27;SimpleMemobj.py&#x27;</span>)</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">Source</span><span class="params">(<span class="string">&#x27;simple_memobj.cc&#x27;</span>)</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">DebugFlag</span><span class="params">(<span class="string">&#x27;SimpleMemobj&#x27;</span>, <span class="string">&quot;For Learning gem5 Part 2.&quot;</span>)</span></span></span><br></pre></td></tr></table></figure>
+
+
+
+<h1 id="创建配置文件"><a href="#创建配置文件" class="headerlink" title="创建配置文件"></a>创建配置文件</h1><p>在<code>configs/learning_gem5/part</code> 中创建配置文件 <code>simple_memobj.py</code></p>
+<p>重点部分如下</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Create the simple memory object</span></span><br><span class="line">system.memobj = SimpleMemobj()  //此处SimpleMemobj为python文件中创建的对象</span><br><span class="line"></span><br><span class="line"><span class="comment"># Hook the CPU ports up to the cache</span></span><br><span class="line">system.cpu.icache_port = system.memobj.inst_port   //将端口分别进行连接</span><br><span class="line">system.cpu.dcache_port = system.memobj.data_port</span><br><span class="line"></span><br><span class="line"><span class="comment"># Create a memory bus, a coherent crossbar, in this case</span></span><br><span class="line">system.membus = SystemXBar()</span><br><span class="line"></span><br><span class="line"><span class="comment"># Connect the memobj</span></span><br><span class="line">system.memobj.mem_side = system.membus.slave</span><br></pre></td></tr></table></figure>
+
+
+
+<p>完整代码如下</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">import</span> m5</span><br><span class="line"><span class="keyword">from</span> m5.objects <span class="keyword">import</span> *</span><br><span class="line"></span><br><span class="line">system = System()</span><br><span class="line"></span><br><span class="line">system.clk_domain = SrcClockDomain()</span><br><span class="line">system.clk_domain.clock = <span class="string">&#x27;1GHz&#x27;</span></span><br><span class="line">system.clk_domain.voltage_domain = VoltageDomain()</span><br><span class="line"></span><br><span class="line">system.mem_mode = <span class="string">&#x27;timing&#x27;</span>               <span class="comment"># Use timing accesses</span></span><br><span class="line">system.mem_ranges = [AddrRange(<span class="string">&#x27;512MB&#x27;</span>)] <span class="comment"># Create an address range</span></span><br><span class="line"></span><br><span class="line">system.cpu = TimingSimpleCPU()</span><br><span class="line"></span><br><span class="line"><span class="comment"># Create the simple memory object</span></span><br><span class="line">system.memobj = SimpleMemobj()</span><br><span class="line"></span><br><span class="line"><span class="comment"># Hook the CPU ports up to the cache</span></span><br><span class="line">system.cpu.icache_port = system.memobj.inst_port</span><br><span class="line">system.cpu.dcache_port = system.memobj.data_port</span><br><span class="line"></span><br><span class="line"><span class="comment"># Create a memory bus, a coherent crossbar, in this case</span></span><br><span class="line">system.membus = SystemXBar()</span><br><span class="line"></span><br><span class="line"><span class="comment"># Connect the memobj</span></span><br><span class="line">system.memobj.mem_side = system.membus.slave</span><br><span class="line"></span><br><span class="line"><span class="comment"># create the interrupt controller for the CPU and connect to the membus</span></span><br><span class="line">system.cpu.createInterruptController()</span><br><span class="line">system.cpu.interrupts[<span class="number">0</span>].pio = system.membus.master</span><br><span class="line">system.cpu.interrupts[<span class="number">0</span>].int_master = system.membus.slave</span><br><span class="line">system.cpu.interrupts[<span class="number">0</span>].int_slave = system.membus.master</span><br><span class="line"></span><br><span class="line"><span class="comment"># Create a DDR3 memory controller and connect it to the membus</span></span><br><span class="line">system.mem_ctrl = MemCtrl()</span><br><span class="line">system.mem_ctrl.dram = DDR3_1600_8x8()</span><br><span class="line">system.mem_ctrl.dram.<span class="built_in">range</span> = system.mem_ranges[<span class="number">0</span>]</span><br><span class="line">system.mem_ctrl.port = system.membus.master</span><br><span class="line"></span><br><span class="line"><span class="comment"># Connect the system up to the membus</span></span><br><span class="line">system.system_port = system.membus.slave</span><br><span class="line"></span><br><span class="line"><span class="comment"># Create a process for a simple &quot;Hello World&quot; application</span></span><br><span class="line">process = Process()</span><br><span class="line"><span class="comment"># Set the command</span></span><br><span class="line"><span class="comment"># grab the specific path to the binary</span></span><br><span class="line">thispath = os.path.dirname(os.path.realpath(__file__))</span><br><span class="line">binpath = os.path.join(thispath, <span class="string">&#x27;../../../&#x27;</span>,</span><br><span class="line">                       <span class="string">&#x27;tests/test-progs/hello/bin/x86/linux/hello&#x27;</span>)</span><br><span class="line"><span class="comment"># cmd is a list which begins with the executable (like argv)</span></span><br><span class="line">process.cmd = [binpath]</span><br><span class="line"><span class="comment"># Set the cpu to use the process as its workload and create thread contexts</span></span><br><span class="line">system.cpu.workload = process</span><br><span class="line">system.cpu.createThreads()</span><br><span class="line"></span><br><span class="line">system.workload = SEWorkload.init_compatible(binpath)</span><br><span class="line"></span><br><span class="line"><span class="comment"># set up the root SimObject and start the simulation</span></span><br><span class="line">root = Root(full_system = <span class="literal">False</span>, system = system)</span><br><span class="line"><span class="comment"># instantiate all of the objects we&#x27;ve created above</span></span><br><span class="line">m5.instantiate()</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">&quot;Beginning simulation!&quot;</span>)</span><br><span class="line">exit_event = m5.simulate()</span><br><span class="line"><span class="built_in">print</span>(<span class="string">&#x27;Exiting @ tick %i because %s&#x27;</span> % (m5.curTick(), exit_event.getCause()))</span><br></pre></td></tr></table></figure>
+
+
+
+<h1 id="编译运行"><a href="#编译运行" class="headerlink" title="编译运行"></a>编译运行</h1><p>编译gem5，然后运行 <code>build/X86/gem5.opt configs/learning_gem5/part2/simple_memobj.py</code> 即可得到如下结果</p>
+<p><img src="/archives/6f2ac16f/image-20220425174714157.png" alt="image-20220425174714157"></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer"><div>
+    
+        <div style="text-align:center;color: #ccc;font-size:24px; padding-top: 10px;">--------------------------------------- The End ---------------------------------------  </div>
+    
+</div>
+
+          
+
+<div class="post-copyright">
+<ul>
+  <li class="post-copyright-author">
+      <strong>本文作者： </strong>张会挽
+  </li>
+  <li class="post-copyright-link">
+      <strong>本文链接：</strong>
+      <a href="https://zhanghuiwan.github.io/archives/6f2ac16f.html" title="gem5学习记录（一）—SimpleMem">https://zhanghuiwan.github.io/archives/6f2ac16f.html</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/gem5/" rel="tag"># gem5</a>
+              <a href="/tags/%E5%AD%A6%E4%B9%A0/" rel="tag"># 学习</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/archives/3ace379b.html" rel="prev" title="优化hexo—themes-next(二)">
+                  <i class="fa fa-chevron-left"></i> 优化hexo—themes-next(二)
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">张会挽</span>
+</div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+    <span title="站点总字数">16k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">15 分钟</span>
+  </span>
+</div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>
